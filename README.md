@@ -6,9 +6,15 @@ You have to be administrator to run this script successfully!
 ./run-admin.sh
 ```
 
-## Deploying a PostgreSQL and 
+## Deploying a PostgreSQL, a DG cluster and other needed artifacts...
 
-You have to be logged in your OpenShift cluster before running this script
+You have to be logged in your OpenShift cluster before running this script, check if you are running this command. It should return a string containing the user or an error if you're not logged in.
+
+```sh
+oc whoami
+```
+
+If you are correctly logged in, please run this script to deploy
 
 ```sh
 ./run.sh $(oc whoami)
