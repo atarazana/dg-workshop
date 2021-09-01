@@ -1,0 +1,64 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  annotations:
+    image.openshift.io/triggers: >-
+      [{"from":{"kind":"ImageStreamTag","name":"backend-database:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"backend-database\")].image"}]
+    openshift.io/generated-by: OpenShiftNewApp
+  name: backend-database
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: backend-database
+    app.kubernetes.io/component: backend-database
+    app.kubernetes.io/instance: backend-database
+    app.kubernetes.io/part-of: {{ .Values.appName }}
+    app.openshift.io/runtime: postgresql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      deployment: backend-database
+  template:
+    metadata:
+      labels:
+        deployment: backend-database
+    spec:
+      containers:
+        - name: backend-database
+          image: registry.redhat.io/rhel8/postgresql-10:latest
+          ports:
+            - containerPort: 5432
+              protocol: TCP
+          env:
+            - name: POSTGRESQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: backend-database-secret
+                  key: DB_NAME
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: backend-database-secret
+                  key: DB_PASSWORD
+            - name: POSTGRESQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: backend-database-secret
+                  key: DB_USER
+          resources:
+            limits:
+              cpu: 500m
+              memory: 250Mi
+            requests:
+              cpu: 200m
+              memory: 150Mi
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+  strategy:
+    type: Recreate
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600

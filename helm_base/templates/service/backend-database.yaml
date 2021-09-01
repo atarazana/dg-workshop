@@ -1,0 +1,21 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: backend-database
+  namespace: {{ .Values.namespace }}
+  annotations:
+    template.openshift.io/expose-service_ip_port: '{.spec.clusterIP}:{.spec.ports[?(.name=="postgresql")].port}'
+  labels:
+    app: backend-database
+    app.kubernetes.io/component: backend-database
+    app.kubernetes.io/instance: backend-database
+spec:
+  ports:
+    - name: postgresql
+      protocol: TCP
+      port: 5432
+      targetPort: 5432
+  selector:
+    deployment: backend-database
+  type: ClusterIP
+  sessionAffinity: None

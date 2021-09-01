@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../helm_base
+#  - namespace.yml
+#namespace: dg-workshop-dev
+commonLabels:
+  productive-environment: "true"
+  app.kubernetes.io/part-of: dg-workshop
+  app.kubernetes.io/managed-by: argocd

@@ -1,0 +1,74 @@
+####
+# This Dockerfile is used in order to build a container that runs the Quarkus application in native (no JVM) mode
+#
+# Before building the container image run:
+#
+# ./mvnw package -Pnative
+#
+# Then, build the image with:
+#
+# docker build -f src/main/docker/Dockerfile.native -t quarkus/atomic-fruit-service .
+#
+# Then run the container using:
+#
+# docker run -i --rm -p 8080:8080 quarkus/atomic-fruit-service
+#
+###
+
+FROM registry.access.redhat.com/quarkus/mandrel-20-rhel8:20.3-10 AS BASE
+
+#ENV MANDREL_VERSION=21.0.0.0.Final
+ENV MANDREL_VERSION=20.3.1.2-Final
+
+ENV MVN_VERSION=3.6.3
+
+ENV GRAALVM_HOME="/usr/local/mandrel-java11-${MANDREL_VERSION}"
+
+ENV PATH=/opt/jdk/bin:/usr/local/apache-maven-${MVN_VERSION}/bin:${PATH}
+
+USER root
+
+RUN dnf install -y curl ca-certificates zlib-devel gcc wget tar gzip java-11-openjdk-devel \
+    && curl -Lo /usr/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \
+    && chmod a+x /usr/bin/jq
+
+RUN wget -O /tmp/apache-maven.tar.gz http://archive.apache.org/dist/maven/maven-3/${MVN_VERSION}/binaries/apache-maven-${MVN_VERSION}-bin.tar.gz && cd /usr/local && tar -xvzf /tmp/apache-maven.tar.gz && rm -rf /tmp/apache-maven.tar.gz
+
+RUN wget -O /tmp/mandrel.tar.gz https://github.com/graalvm/mandrel/releases/download/mandrel-${MANDREL_VERSION}/mandrel-java11-linux-amd64-${MANDREL_VERSION}.tar.gz && cd /usr/local && tar -xvzf /tmp/mandrel.tar.gz && rm -rf /tmp/mandrel.tar.gz
+
+RUN mkdir -p /work
+
+RUN chown 1001 /work \
+    && chmod "g+rwX" /work \
+    && chown 1001:root /work
+
+USER 1001
+
+RUN mkdir -p ${HOME}/.m2
+
+COPY ./oci/settings.xml ${HOME}/.m2
+
+COPY src /work/src
+COPY pom.xml /work/pom.xml
+    
+WORKDIR /work/
+
+#RUN mvn dependency:purge-local-repository
+RUN mvn dependency:go-offline
+
+RUN mvn clean package -Pnative -DskipTests
+
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
+
+WORKDIR /work/
+
+RUN chown 1001 /work \
+    && chmod "g+rwX" /work \
+    && chown 1001:root /work
+
+COPY --from=BASE /work/target/*-runner /work/application
+
+EXPOSE 8080
+USER 1001
+
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]

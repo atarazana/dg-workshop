@@ -1,0 +1,26 @@
+apiVersion: infinispan.org/v1 
+kind: Infinispan 
+metadata:
+  name: eda-infinispan
+  namespace: {{ .Values.namespace }}
+spec:
+  # Specifies the number of nodes in the cluster.
+  replicas: 3
+  service:
+    # Configures the service type as DataGrid.
+    type: DataGrid
+  logging:
+    categories:
+      org.infinispan: info
+      org.jgroups: info
+  container:
+    cpu: "1000m"
+    memory: 1Gi
+  expose:
+    type: Route
+  security:
+    endpointEncryption:
+      # certSecretName:
+      # certServiceName:
+      type: None  
+    endpointSecretName: eda-infinispan-credentials

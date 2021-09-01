@@ -1,0 +1,87 @@
+apiVersion: 1.0.0
+metadata:
+  generateName: fruit-service-quarkus-
+projects:
+  - name: fruit-service-quarkus
+    source:
+      location: 'https://github.com/atarazana/fruit-service-quarkus.git'
+      type: github
+components:
+  - id: redhat/quarkus-java11/latest
+    type: chePlugin
+  - mountSources: true
+    endpoints:
+      - attributes:
+          public: 'true'
+          protocol: http
+          discoverable: 'true'
+        name: web-ui
+        port: 8080
+      - attributes:
+          public: 'false'
+          protocol: jdwp
+          discoverable: 'false'
+        name: debug
+        port: 5005
+    memoryLimit: 8Gi
+    type: dockerimage
+    image: 'quay.io/atarazana/quarkus-stack:2.7-5'
+    alias: quarkus-tools
+    env:
+      - value: '-Xmx6G -Xss128M -XX:MetaspaceSize=1G -XX:MaxMetaspaceSize=2G -XX:+CMSClassUnloadingEnabled'
+        name: MAVEN_OPTS
+  - id: redhat/vscode-yaml/latest
+    type: chePlugin
+  - id: vscode/typescript-language-features/latest
+    type: chePlugin
+  - id: redhat/vscode-xml/latest
+    type: chePlugin
+  - id: redhat/java/latest
+    type: chePlugin
+commands:
+  - name: Login to OpenShift
+    actions:
+      - workdir: '${CHE_PROJECTS_ROOT}'
+        type: exec
+        command: 'oc login https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT --insecure-skip-tls-verify=true -u ${CHE_WORKSPACE_NAMESPACE}'
+        component: quarkus-tools
+  - name: Run Tests
+    actions:
+      - workdir: '${CHE_PROJECTS_ROOT}'
+        type: exec
+        command: 'mvn verify -f ${CHE_PROJECTS_ROOT}/atomic-fruit-service'
+        component: quarkus-tools
+  - name: Start Live Coding
+    actions:
+      - workdir: '${CHE_PROJECTS_ROOT}'
+        type: exec
+        command: 'mvn clean compile quarkus:dev -f ${CHE_PROJECTS_ROOT}/atomic-fruit-service'
+        component: quarkus-tools
+  - name: Package App for OpenShift
+    actions:
+      - workdir: '${CHE_PROJECTS_ROOT}'
+        type: exec
+        command: 'mvn package -DuberJar=true -DskipTests -f ${CHE_PROJECTS_ROOT}/atomic-fruit-service'
+        component: quarkus-tools
+  - name: Build Native App
+    actions:
+      - workdir: '${CHE_PROJECTS_ROOT}'
+        type: exec
+        command: 'mvn package -Pnative -DskipTests -Dquarkus.package.uber-jar=false -f ${CHE_PROJECTS_ROOT}/atomic-fruit-service'
+        component: quarkus-tools
+  - name: Start Debugger on 5005
+    actions:
+      - referenceContent: |
+          {
+            "version": "0.2.0",
+            "configurations": [
+              {
+                "type": "java",
+                "request": "attach",
+                "name": "Attach to App",
+                "hostName": "localhost",
+                "port": 5005
+              }
+            ]
+          }
+        type: vscode-launch

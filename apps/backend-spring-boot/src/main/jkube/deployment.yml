@@ -1,0 +1,23 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: ${project.artifactId}
+  annotations:
+    app.openshift.io/connects-to: >-
+      ["backend-database",{"apiVersion":"apps/v1","kind":"Deployment","name":"backend-database"}]
+  labels:
+    app.kubernetes.io/part-of: dg-workshop
+    app.openshift.io/runtime: spring
+spec:
+  template:
+    spec:
+      containers:
+        - env:
+            - name: JAVA_OPTIONS
+              valueFrom:
+                configMapKeyRef:
+                  name: ${project.artifactId}-${db.type}-configmap
+                  key: java-options
+          envFrom:
+          - secretRef:
+              name: backend-database-secret

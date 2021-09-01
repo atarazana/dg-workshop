@@ -1,0 +1,56 @@
+####
+# This Dockerfile is used in order to build a container that runs the Quarkus application in native (no JVM) mode
+#
+# Before building the container image run:
+#
+# ./mvnw package -Pnative
+#
+# Then, build the image with:
+#
+# docker build -f src/main/docker/Dockerfile.native -t quarkus/atomic-fruit-service .
+#
+# Then run the container using:
+#
+# docker run -i --rm -p 8080:8080 quarkus/atomic-fruit-service
+#
+###
+
+FROM quay.io/atarazana/quarkus-native-build-base:20.3.1.2-Final AS BUILD
+
+USER root
+
+RUN mkdir -p /work
+
+RUN chown 1001 /work \
+    && chmod "g+rwX" /work \
+    && chown 1001:root /work
+
+USER 1001
+
+RUN mkdir -p ${HOME}/.m2
+
+COPY ./oci/settings.xml ${HOME}/.m2
+
+COPY src /work/src
+COPY pom.xml /work/pom.xml
+    
+WORKDIR /work/
+
+RUN mvn dependency:go-offline
+
+RUN mvn clean package -Pnative -DskipTests
+
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
+
+WORKDIR /work/
+
+RUN chown 1001 /work \
+    && chmod "g+rwX" /work \
+    && chown 1001:root /work
+
+COPY --from=BUILD /work/target/*-runner /work/application
+
+EXPOSE 8080
+USER 1001
+
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]

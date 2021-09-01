@@ -1,0 +1,6 @@
+
+debug: false
+clusterName: "local"
+namespace: dg-workshop-dev 
+appName: dg-workshop
+baseRepoUrl: https://github.com/atarazana
