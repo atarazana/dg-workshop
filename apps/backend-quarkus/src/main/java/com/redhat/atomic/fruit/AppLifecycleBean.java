@@ -24,7 +24,7 @@ public class AppLifecycleBean {
         if (ProfileManager.getActiveProfile() == "dev") {
             ConfigurationBuilder builder = new ConfigurationBuilder();
             Properties p = new Properties();
-            try(InputStream is = this.getClass().getClassLoader().getResourceAsStream("META-INF/resources/hotrod-client.properties")) {
+            try(InputStream is = this.getClass().getClassLoader().getResourceAsStream("META-INF/caching/hotrod-client.properties")) {
                 p.load(is);
                 LOGGER.info(">> properties: " + p);
                 builder.addServer()
