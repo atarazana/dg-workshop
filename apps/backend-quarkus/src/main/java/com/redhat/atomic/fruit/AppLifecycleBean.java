@@ -4,17 +4,14 @@ import java.io.InputStream;
 import java.util.Properties;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-
-import io.quarkus.runtime.ShutdownEvent;
-import io.quarkus.runtime.Startup;
-import io.quarkus.runtime.StartupEvent;
-import io.quarkus.runtime.configuration.ProfileManager;
 
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.jboss.logging.Logger;
+
+import io.quarkus.runtime.Startup;
+import io.quarkus.runtime.configuration.ProfileManager;
 
 @Startup 
 @ApplicationScoped
