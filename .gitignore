@@ -1,3 +1,5 @@
 all.yml
 old/
 .vscode/
+*.log
+**/target/
