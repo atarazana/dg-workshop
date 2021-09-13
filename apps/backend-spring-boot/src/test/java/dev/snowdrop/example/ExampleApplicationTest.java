@@ -20,29 +20,31 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+import java.util.Collections;
+
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import dev.snowdrop.example.service.Fruit;
 import dev.snowdrop.example.service.FruitRepository;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
-import java.util.Collections;
 
-import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
-
-@RunWith(SpringRunner.class)
+// @RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ExampleApplicationTest {
 
-    private static final String FRUITS_PATH = "api/fruits";
+    private static final String FRUITS_PATH = "fruit";
 
     @Value("${local.server.port}")
     private int port;
@@ -50,7 +52,7 @@ public class ExampleApplicationTest {
     @Autowired
     private FruitRepository fruitRepository;
 
-    @Before
+    @BeforeEach
     public void beforeTest() {
         fruitRepository.deleteAll();
         RestAssured.baseURI = String.format("http://localhost:%d/" + FRUITS_PATH, port);
@@ -58,14 +60,15 @@ public class ExampleApplicationTest {
 
     @Test
     public void testGetAll() {
-        Fruit cherry = fruitRepository.save(new Fruit("Cherry"));
-        Fruit apple = fruitRepository.save(new Fruit("Apple"));
+        Fruit cherry = fruitRepository.save(new Fruit("Cherry", "Spring"));
+        Fruit apple = fruitRepository.save(new Fruit("Apple", "Winter"));
         requestSpecification()
                 .get()
                 .then()
                 .statusCode(200)
-                .body("id", hasItems(cherry.getId(), apple.getId()))
-                .body("name", hasItems(cherry.getName(), apple.getName()));
+                .body("id", hasItems(cherry.getId().intValue(), apple.getId().intValue()))
+                .body("name", hasItems(cherry.getName(), apple.getName()))
+                .body("season", hasItems(cherry.getSeason(), apple.getSeason()));
     }
 
     @Test
@@ -79,13 +82,14 @@ public class ExampleApplicationTest {
 
     @Test
     public void testGetOne() {
-        Fruit cherry = fruitRepository.save(new Fruit("Cherry"));
+        Fruit cherry = fruitRepository.save(new Fruit("Cherry", "Spring"));
         requestSpecification()
                 .get(String.valueOf(cherry.getId()))
                 .then()
                 .statusCode(200)
-                .body("id", is(cherry.getId()))
-                .body("name", is(cherry.getName()));
+                .body("id", is(cherry.getId().intValue()))
+                .body("name", is(cherry.getName()))
+                .body("season", is(cherry.getSeason()));
     }
 
     @Test
@@ -141,7 +145,7 @@ public class ExampleApplicationTest {
 
     @Test
     public void testPut() {
-        Fruit cherry = fruitRepository.save(new Fruit("Cherry"));
+        Fruit cherry = fruitRepository.save(new Fruit("Cherry", "Spring"));
         requestSpecification()
                 .contentType(ContentType.JSON)
                 .body(Collections.singletonMap("name", "Lemon"))
@@ -149,7 +153,7 @@ public class ExampleApplicationTest {
                 .put(String.valueOf(cherry.getId()))
                 .then()
                 .statusCode(200)
-                .body("id", is(cherry.getId()))
+                .body("id", is(cherry.getId().intValue()))
                 .body("name", is("Lemon"));
 
     }
@@ -167,7 +171,7 @@ public class ExampleApplicationTest {
 
     @Test
     public void testPutWithWrongPayload() {
-        Fruit cherry = fruitRepository.save(new Fruit("Cherry"));
+        Fruit cherry = fruitRepository.save(new Fruit("Cherry", "Spring"));
         requestSpecification()
                 .contentType(ContentType.JSON)
                 .body(Collections.singletonMap("id", 0))
@@ -179,7 +183,7 @@ public class ExampleApplicationTest {
 
     @Test
     public void testPutWithNonJsonPayload() {
-        Fruit cherry = fruitRepository.save(new Fruit("Cherry"));
+        Fruit cherry = fruitRepository.save(new Fruit("Cherry", "Spring"));
         requestSpecification()
                 .contentType(ContentType.XML)
                 .when()
@@ -190,7 +194,7 @@ public class ExampleApplicationTest {
 
     @Test
     public void testPutWithEmptyPayload() {
-        Fruit cherry = fruitRepository.save(new Fruit("Cherry"));
+        Fruit cherry = fruitRepository.save(new Fruit("Cherry", "Spring"));
         requestSpecification()
                 .contentType(ContentType.JSON)
                 .when()
@@ -201,7 +205,7 @@ public class ExampleApplicationTest {
 
     @Test
     public void testDelete() {
-        Fruit cherry = fruitRepository.save(new Fruit("Cherry"));
+        Fruit cherry = fruitRepository.save(new Fruit("Cherry", "Spring"));
         requestSpecification()
                 .delete(String.valueOf(cherry.getId()))
                 .then()

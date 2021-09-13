@@ -1,0 +1,1 @@
+<distributed-cache name="fruits"><encoding media-type="application/x-protostream"/></distributed-cache>

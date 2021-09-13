@@ -87,7 +87,7 @@ public class FruitResource {
     @GET
     @Path("fruit/by-season/{season}")
     public List<Fruit> fruitsBySeason(@PathParam("season") String season) {
-        LOGGER.info("allFruitsNoCache");
+        LOGGER.info("fruitsBySeason");
         // return Fruit.getAllFruitsForSeason(season);
         QueryFactory queryFactory = Search.getQueryFactory(cache);
         Query<Fruit> query = queryFactory.create("FROM dg.workshop.Fruit WHERE season = '" + season + "' " );

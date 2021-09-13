@@ -16,13 +16,20 @@
 
 package dev.snowdrop.example.service;
 
-import dev.snowdrop.example.exception.NotFoundException;
-import dev.snowdrop.example.exception.UnprocessableEntityException;
-import dev.snowdrop.example.exception.UnsupportedMediaTypeException;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Spliterator;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
+import org.infinispan.client.hotrod.RemoteCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,14 +44,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.view.RedirectView;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Spliterator;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
+import dev.snowdrop.example.exception.NotFoundException;
+import dev.snowdrop.example.exception.UnprocessableEntityException;
+import dev.snowdrop.example.exception.UnsupportedMediaTypeException;
 import io.micrometer.core.instrument.Metrics;
 
 @RestController
@@ -53,9 +55,13 @@ public class FruitController {
 
     private static final String FORCED_INTERNAL_ERROR = "FORCED INTERNAL ERROR";
 
-    private static final Logger LOG = LoggerFactory.getLogger(FruitController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FruitController.class);
     
     private final FruitRepository repository;
+
+    @Autowired
+    @Qualifier("getFruitsCache")
+    private RemoteCache<Long, Fruit> cache;
 
     public FruitController(FruitRepository repository) {
         this.repository = repository;
@@ -89,8 +95,8 @@ public class FruitController {
         return post(fruit);
     }
 
-    @GetMapping("/api/fruits/{id}")
-    public Fruit get(@PathVariable("id") Integer id) {
+    @GetMapping("/fruit/{id}")
+    public Fruit get(@PathVariable("id") Long id) {
         if (checkThrowErrors()) {
             throwInternalServerError();
         }
@@ -106,16 +112,17 @@ public class FruitController {
         return repository.findById(id).get();
     }
 
-    @GetMapping("/api/fruits")
-    public List<Fruit> getAll() {
+    @GetMapping("/fruit/no-cache")
+    public List<Fruit> allFruitsNoCache() {
         if (checkThrowErrors()) {
             throwInternalServerError();
         }
 
         // Prometheus metric
         Metrics.counter("api.http.requests.total", "api", "inventory", "method", "GET", "endpoint", 
-        "/inventory").increment();
+        "/fruit/no-cache").increment();
         // <<< Prometheus metric
+        
         Spliterator<Fruit> fruits = repository.findAll()
                 .spliterator();
 
@@ -126,8 +133,41 @@ public class FruitController {
                 .collect(Collectors.toList());
     }
 
+    @GetMapping("/cache/warmup")
+    public List<Fruit> cacheWarmUp() {
+        LOGGER.info("Warming up the cache...");
+        Map<Long, Fruit> map = StreamSupport.stream(repository.findAll().spliterator(), false)
+            .collect(Collectors.toMap(Fruit::getId, Function.identity()));
+
+        cache.putAll(map);
+
+        return cache.values().stream().collect(Collectors.toList());
+    }
+
+    @GetMapping("/fruit")
+    public List<Fruit> getAll() {
+        if (checkThrowErrors()) {
+            throwInternalServerError();
+        }
+
+        // Prometheus metric
+        Metrics.counter("api.http.requests.total", "api", "inventory", "method", "GET", "endpoint", 
+        "/fruit").increment();
+        // <<< Prometheus metric
+        
+        // Spliterator<Fruit> fruits = repository.findAll()
+        //         .spliterator();
+
+        timeOut();
+
+        // return StreamSupport
+        //         .stream(fruits, false)
+        //         .collect(Collectors.toList());
+        return cache.values().stream().collect(Collectors.toList());
+    }
+
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping("/api/fruits")
+    @PostMapping("/fruit")
     public Fruit post(@RequestBody(required = false) Fruit fruit) {
         if (checkThrowErrors()) {
             throwInternalServerError();
@@ -137,12 +177,13 @@ public class FruitController {
 
         timeOut();
 
-        return repository.save(fruit);
+        repository.save(fruit);
+        return cache.put(fruit.getId(), fruit);
     }
 
     @ResponseStatus(HttpStatus.OK)
-    @PutMapping("/api/fruits/{id}")
-    public Fruit put(@PathVariable("id") Integer id, @RequestBody(required = false) Fruit fruit) {
+    @PutMapping("/fruit/{id}")
+    public Fruit put(@PathVariable("id") Long id, @RequestBody(required = false) Fruit fruit) {
         if (checkThrowErrors()) {
             throwInternalServerError();
         }
@@ -154,12 +195,13 @@ public class FruitController {
 
         timeOut();
 
-        return repository.save(fruit);
+        repository.save(fruit);
+        return cache.put(fruit.getId(), fruit);
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @DeleteMapping("/api/fruits/{id}")
-    public void delete(@PathVariable("id") Integer id) {
+    @DeleteMapping("/fruit/{id}")
+    public void delete(@PathVariable("id") Long id) {
         if (checkThrowErrors()) {
             throwInternalServerError();
         }
@@ -167,11 +209,12 @@ public class FruitController {
         verifyFruitExists(id);
 
         repository.deleteById(id);
-
+        cache.remove(id);
+        
         timeOut();
     }
 
-    private void verifyFruitExists(Integer id) {
+    private void verifyFruitExists(Long id) {
         if (!repository.existsById(id)) {
             throw new NotFoundException(String.format("Fruit with id=%d was not found", id));
         }
@@ -192,7 +235,7 @@ public class FruitController {
     }
 
     private void throwInternalServerError() throws ResponseStatusException {
-        LOG.error(FORCED_INTERNAL_ERROR);
+        LOGGER.error(FORCED_INTERNAL_ERROR);
         throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
@@ -201,7 +244,7 @@ public class FruitController {
     }
 
     private void timeOut() {
-        LOG.info("DELAY OF " + SetupController.getDelayInMilliseconds() + " WAS ADDED");
+        LOGGER.info("DELAY OF " + SetupController.getDelayInMilliseconds() + " WAS ADDED");
         try {
 			TimeUnit.MILLISECONDS.sleep(SetupController.getDelayInMilliseconds());
 		} catch (InterruptedException e) {

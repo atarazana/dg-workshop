@@ -27,8 +27,24 @@ NOTE: Run `oc project` to see that the default project is the project the script
 Deploy code with no cache involved
 
 ```sh
+cd apps/backend-spring-boot
 mvn clean oc:deploy -Popenshift -DskipTests
 ```
+
+Wait until the application is deployed... blah blah
+
+### Preparing our code to connect to Data Grid
+
+Run the code...
+
+```sh
+mvn spring-boot:run -Plocal -Dspring-boot.run.profiles=local
+```
+
+#### Adding inifinispan client libraries...
+
+
+
 
 ## If Quarkus
 
@@ -428,4 +444,8 @@ public class AppLifecycleBean {
 
 }
 ```
+
+#### Time to do some testing
+
+TODO
 

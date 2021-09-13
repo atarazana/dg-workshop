@@ -18,5 +18,5 @@ package dev.snowdrop.example.service;
 
 import org.springframework.data.repository.CrudRepository;
 
-public interface FruitRepository extends CrudRepository<Fruit, Integer> {
+public interface FruitRepository extends CrudRepository<Fruit, Long> {
 }

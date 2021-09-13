@@ -46,13 +46,15 @@
           if ($scope.form.id == -1) {
             //Id is absent so add fruits - POST operation
             method = "POST";
-            url = '/api/fruits';
+            url = '/fruit';
             data.name = $scope.form.name;
+            data.season = $scope.form.season;
           } else {
             //If Id is present, it's edit operation - PUT operation
             method = "PUT";
-            url = '/api/fruits/' + $scope.form.id;
+            url = '/fruit/' + $scope.form.id;
             data.name = $scope.form.name;
+            data.season = $scope.form.season;
           }
 
           $http({
@@ -69,13 +71,14 @@
         $scope.remove = function (fruit) {
           $http({
             method: 'DELETE',
-            url: '/api/fruits/' + fruit.id
+            url: '/fruit/' + fruit.id
           }).then(_success, _error);
         };
 
         //In case of edit fruits, populate form with fruit data
         $scope.edit = function (fruit) {
           $scope.form.name = fruit.name;
+          $scope.form.season = fruit.season;
           $scope.form.id = fruit.id;
         };
 
@@ -84,7 +87,7 @@
         function _refreshPageData() {
           $http({
             method: 'GET',
-            url: '/api/fruits'
+            url: '/fruit'
           }).then(function successCallback(response) {
             $scope.fruits = response.data;
           }, function errorCallback(response) {
@@ -104,6 +107,7 @@
         //Clear the form
         function _clearForm() {
           $scope.form.name = "";
+          $scope.form.season = "";
           $scope.form.id = -1;
         }
       });
@@ -130,6 +134,7 @@
     <form ng-submit="update()">
         <div class="row">
             <div class="col-6"><input type="text" placeholder="Name" ng-model="form.name" size="60"/></div>
+            <div class="col-6"><input type="text" placeholder="Season" ng-model="form.season" size="30"/></div>
         </div>
         <input type="submit" value="Save"/>
     </form>
@@ -139,7 +144,7 @@
         <div class="col-2">Name</div>
     </div>
     <div class="row" ng-repeat="fruit in fruits">
-        <div class="col-2">{{ fruit.name }}</div>
+        <div class="col-2">{{ fruit.name }} ({{ fruit.season }})  </div>
         <div class="col-8"><a ng-click="edit( fruit )" class="btn">Edit</a> <a ng-click="remove( fruit )" class="btn">Remove</a>
         </div>
     </div>
