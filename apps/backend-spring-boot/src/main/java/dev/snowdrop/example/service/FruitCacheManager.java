@@ -31,10 +31,6 @@ import dev.snowdrop.example.service.infrastructure.Metadata;
 public class FruitCacheManager {
     private final static Logger LOGGER = LoggerFactory.getLogger(FruitCacheManager.class);
 
-    // @Autowired
-    // private Environment environment;
-
-    
     private final RemoteCacheManager cacheManager;
 
     @Autowired
@@ -47,45 +43,4 @@ public class FruitCacheManager {
         LOGGER.info(">> getFruitsCache");
         return this.cacheManager.getCache(Metadata.FRUITS_CACHE);
     }
-
-    // @Bean
-    // RemoteCacheManager getCacheManager() {
-    //     LOGGER.info(">> getCacheManager");
-    //     ConfigurationBuilder builder = new ConfigurationBuilder();
-        
-    //     List<String> activeProfiles = Arrays.asList(this.environment.getActiveProfiles());
-    //     if (activeProfiles.contains("local")) {
-    //         Properties p = new Properties();
-    //         try(InputStream is = this.getClass().getClassLoader().getResourceAsStream("META-INF/caching/hotrod-client.properties")) {
-    //             p.load(is);
-    //             LOGGER.info(">> properties: " + p);
-    //             builder.withProperties(p);
-    //             builder.addServer()
-    //                 .host("localhost")
-    //                 .port(11222)
-    //                 .security().authentication()
-    //                 .username("developer")
-    //                 .password("developer");
-    //                 //.remoteCache("fruits")
-    //                 //.configuration("<replicated-cache name=\"fruits\"><encoding media-type=\"application/x-protostream\"/></replicated-cache>");
-                
-    //             builder.remoteCache(Metadata.FRUITS_CACHE)
-    //                 // .configurationURI(cacheConfigUri)
-    //                 .marshaller(ProtoStreamMarshaller.class);
-   
-    //             // Add marshaller in the client, the class is generated from the interface in compile time
-    //             builder.addContextInitializer(new FruitSchemaBuilderImpl());
-                
-    //         } catch (Throwable t) {
-    //             LOGGER.error("File not found. " + t.getMessage());
-    //         }
-    //     }
-
-    //     this.cacheManager = new RemoteCacheManager(builder.build());
-
-    //     RemoteCache<Long, Fruit> cache = cacheManager.getCache(Metadata.FRUITS_CACHE);
-    //     LOGGER.info("cache: " + cache);
-
-    //     return cacheManager;
-    // }
 }
