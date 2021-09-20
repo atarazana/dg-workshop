@@ -21,19 +21,27 @@ public class InfinispanConfiguration {
       final Logger LOGGER = LoggerFactory.getLogger(InfinispanRemoteCacheCustomizer.class);
       return builder -> {
          LOGGER.info("InfinispanRemoteCacheCustomizer->caches()");
-         URI cacheConfigUri;
+         
          try {
-            cacheConfigUri = this.getClass().getClassLoader().getResource("fruits-cache.xml").toURI();
+            URI fruitsCacheConfigUri = this.getClass().getClassLoader().getResource("fruits-cache.xml").toURI();
+            URI fruitsBySeasonCacheConfigUri = this.getClass().getClassLoader().getResource("fruits-by-season-cache.xml").toURI();
+
+            builder.remoteCache(Metadata.FRUITS_CACHE)
+                 .configurationURI(fruitsCacheConfigUri)
+                 .marshaller(ProtoStreamMarshaller.class);
+            LOGGER.info("InfinispanRemoteCacheCustomizer->caches() " + Metadata.FRUITS_CACHE + " created");
+
+            builder.remoteCache(Metadata.FRUITS_BY_SEASON_CACHE)
+                 .configurationURI(fruitsBySeasonCacheConfigUri)
+                 .marshaller(ProtoStreamMarshaller.class);
+            LOGGER.info("InfinispanRemoteCacheCustomizer->caches() " + Metadata.FRUITS_BY_SEASON_CACHE + " created");
          } catch (URISyntaxException e) {
             throw new RuntimeException(e);
          }
 
-         builder.remoteCache(Metadata.FRUITS_CACHE)
-                 .configurationURI(cacheConfigUri)
-                 .marshaller(ProtoStreamMarshaller.class);
-
          // Add marshaller in the client, the class is generated from the interface in compile time
          builder.addContextInitializer(new FruitSchemaBuilderImpl());
+         LOGGER.info("InfinispanRemoteCacheCustomizer->caches() marshaller added");
       };
    }
 }

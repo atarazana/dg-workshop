@@ -16,20 +16,17 @@
 
 package dev.snowdrop.example.service;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import org.infinispan.client.hotrod.RemoteCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -58,13 +55,13 @@ public class FruitController {
     private static final Logger LOGGER = LoggerFactory.getLogger(FruitController.class);
     
     private final FruitRepository repository;
+    private final FruitCacheRepository cacheRepository;
 
     @Autowired
-    @Qualifier("getFruitsCache")
-    private RemoteCache<Long, Fruit> cache;
-
-    public FruitController(FruitRepository repository) {
+    public FruitController(FruitRepository repository, FruitCacheRepository cacheRepository) {
+        LOGGER.info("FruitController: " + repository + " / " + cacheRepository);
         this.repository = repository;
+        this.cacheRepository = cacheRepository;
     }
 
     @RequestMapping(value = "/")
@@ -102,14 +99,34 @@ public class FruitController {
         }
 
         // >>> Prometheus metric
-        Metrics.counter("api.http.requests.total", "api", "inventory", "method", "GET", "endpoint", 
-            "/inventory/" + id).increment();
+        Metrics.counter("api.http.requests.total", "api", "fruit", "method", "GET", "endpoint", 
+            "/fruit/" + id).increment();
         // <<< Prometheus metric
         verifyFruitExists(id);
 
         timeOut();
 
-        return repository.findById(id).get();
+        //return repository.findById(id).get();
+        // return cache.get(id);
+        return cacheRepository.findById(id);
+    }
+
+    @GetMapping("/fruit-by-season/{season}")
+    public List<Fruit> get(@PathVariable("season") String season) {
+        if (checkThrowErrors()) {
+            throwInternalServerError();
+        }
+
+        // >>> Prometheus metric
+        Metrics.counter("api.http.requests.total", "api", "fruit", "method", "GET", "endpoint", 
+            "/fruit-by-season/" + season).increment();
+        // <<< Prometheus metric
+
+        timeOut();
+
+        //return repository.findById(id).get();
+        // return cache.get(id);
+        return cacheRepository.findBySeason(season).isPresent() ? cacheRepository.findBySeason(season).get().getFruits() : new ArrayList<Fruit> ();
     }
 
     @GetMapping("/fruit/no-cache")
@@ -119,7 +136,7 @@ public class FruitController {
         }
 
         // Prometheus metric
-        Metrics.counter("api.http.requests.total", "api", "inventory", "method", "GET", "endpoint", 
+        Metrics.counter("api.http.requests.total", "api", "fruit", "method", "GET", "endpoint", 
         "/fruit/no-cache").increment();
         // <<< Prometheus metric
         
@@ -133,25 +150,26 @@ public class FruitController {
                 .collect(Collectors.toList());
     }
 
-    @GetMapping("/cache/warmup")
-    public List<Fruit> cacheWarmUp() {
-        LOGGER.info("Warming up the cache...");
-        Map<Long, Fruit> map = StreamSupport.stream(repository.findAll().spliterator(), false)
-            .collect(Collectors.toMap(Fruit::getId, Function.identity()));
+    // @GetMapping("/cache/warmup")
+    // public List<Fruit> cacheWarmUp() {
+    //     LOGGER.info("Warming up the cache...");
+    //     Map<Long, Fruit> map = StreamSupport.stream(repository.findAll().spliterator(), false)
+    //         .collect(Collectors.toMap(Fruit::getId, Function.identity()));
 
-        cache.putAll(map);
+    //     cache.putAll(map);
 
-        return cache.values().stream().collect(Collectors.toList());
-    }
+    //     return cache.values().stream().collect(Collectors.toList());
+    // }
 
     @GetMapping("/fruit")
     public List<Fruit> getAll() {
+        LOGGER.info("getAll() was called");
         if (checkThrowErrors()) {
             throwInternalServerError();
         }
 
         // Prometheus metric
-        Metrics.counter("api.http.requests.total", "api", "inventory", "method", "GET", "endpoint", 
+        Metrics.counter("api.http.requests.total", "api", "fruit", "method", "GET", "endpoint", 
         "/fruit").increment();
         // <<< Prometheus metric
         
@@ -163,7 +181,8 @@ public class FruitController {
         // return StreamSupport
         //         .stream(fruits, false)
         //         .collect(Collectors.toList());
-        return cache.values().stream().collect(Collectors.toList());
+        // return cache.values().stream().collect(Collectors.toList());
+        return cacheRepository.findAll();
     }
 
     @ResponseStatus(HttpStatus.CREATED)
@@ -177,8 +196,10 @@ public class FruitController {
 
         timeOut();
 
-        repository.save(fruit);
-        return cache.put(fruit.getId(), fruit);
+        // repository.save(fruit);
+        // return cache.put(fruit.getId(), fruit);
+        LOGGER.info("cacheRepository.upsert(" + fruit.getId() + ", " + fruit + ")");
+        return cacheRepository.upsert(fruit);
     }
 
     @ResponseStatus(HttpStatus.OK)
@@ -195,8 +216,10 @@ public class FruitController {
 
         timeOut();
 
-        repository.save(fruit);
-        return cache.put(fruit.getId(), fruit);
+        // repository.save(fruit);
+        // return cache.put(fruit.getId(), fruit);
+        LOGGER.info("cacheRepository.upsert(" + fruit.getId() + ", " + fruit + ")");
+        return cacheRepository.upsert(fruit);
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -208,8 +231,9 @@ public class FruitController {
         
         verifyFruitExists(id);
 
-        repository.deleteById(id);
-        cache.remove(id);
+        // repository.deleteById(id);
+        // cache.remove(id);
+        cacheRepository.delete(id);
         
         timeOut();
     }

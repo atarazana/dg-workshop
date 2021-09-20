@@ -21,9 +21,10 @@ import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-// import org.springframework.core.env.Environment;
 
 import dev.snowdrop.example.service.infrastructure.Metadata;
 
@@ -31,16 +32,36 @@ import dev.snowdrop.example.service.infrastructure.Metadata;
 public class FruitCacheManager {
     private final static Logger LOGGER = LoggerFactory.getLogger(FruitCacheManager.class);
 
-    private final RemoteCacheManager cacheManager;
+    private final CacheManager cacheManager;
+    private final RemoteCacheManager nativeCacheManager;
 
     @Autowired
-    public FruitCacheManager(RemoteCacheManager cacheManager) {
+    public FruitCacheManager(CacheManager cacheManager, RemoteCacheManager nativeCacheManager) {
         this.cacheManager = cacheManager;
+        this.nativeCacheManager = nativeCacheManager;
     }
 
     @Bean
-    RemoteCache<Long, Fruit> getFruitsCache() {
+    Cache getFruitsCache() {
         LOGGER.info(">> getFruitsCache");
         return this.cacheManager.getCache(Metadata.FRUITS_CACHE);
+    }
+
+    @Bean
+    RemoteCache<Long, Fruit> getFruitsCacheNative() {
+        LOGGER.info(">> getFruitsCacheNative");
+        return this.nativeCacheManager.getCache(Metadata.FRUITS_CACHE);
+    }
+
+    @Bean
+    Cache getFruitsBySeasonCache() {
+        LOGGER.info(">> getFruitsBySeasonCache");
+        return this.cacheManager.getCache(Metadata.FRUITS_BY_SEASON_CACHE);
+    }
+
+    @Bean
+    RemoteCache<String, FruitsBySeason> getFruitsBySeasonCacheNative() {
+        LOGGER.info(">> getFruitsBySeasonCacheNative");
+        return this.nativeCacheManager.getCache(Metadata.FRUITS_BY_SEASON_CACHE);
     }
 }
