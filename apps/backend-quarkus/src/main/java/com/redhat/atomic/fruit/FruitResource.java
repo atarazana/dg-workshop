@@ -21,6 +21,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
+import com.redhat.atomic.fruit.infrastructure.Metadata;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.Search;
@@ -29,6 +31,8 @@ import org.infinispan.query.dsl.QueryFactory;
 import org.infinispan.query.dsl.QueryResult;
 import org.jboss.logging.Logger;
 
+import io.quarkus.cache.CacheKey;
+import io.quarkus.cache.CacheResult;
 import io.quarkus.infinispan.client.Remote;
 
 @Path("/")
@@ -56,13 +60,13 @@ public class FruitResource {
     @Path("fruit")
     public List<Fruit> allFruits() {
         LOGGER.info("allFruits");
-        // ArrayList<Fruit> fruits = new ArrayList<Fruit>();
-        // for (Map.Entry<Long, Fruit> fruit : cache.entrySet()) {
-        //     fruits.add(fruit.getValue());
-        // }
-        // return fruits;
-        // return Fruit.listAll(); 
-        return cache.values().stream().collect(Collectors.toList());
+        List<Fruit> fruitList = Fruit.listAll();
+
+        LOGGER.info("cache.putAll(map)");
+        Map<Long, Fruit> map = fruitList.stream().collect(Collectors.toMap(Fruit::getId, Function.identity()));
+        cache.putAll(map);
+
+        return fruitList;
     }
 
     @GET
@@ -70,18 +74,6 @@ public class FruitResource {
     public List<Fruit> allFruitsNoCache() {
         LOGGER.info("allFruitsNoCache");
         return Fruit.listAll(); 
-    }
-
-    @GET
-    @Path("cache/warmup")
-    public List<Fruit> cacheWarmUp() {
-        LOGGER.info("Warming up the cache...");
-        Map<Long, Fruit> map = Fruit.<Fruit>listAll().stream()
-            .collect(Collectors.toMap(Fruit::getId, Function.identity()));
-
-        cache.putAll(map);
-
-        return cache.values().stream().collect(Collectors.toList());
     }
 
     @GET
@@ -105,9 +97,10 @@ public class FruitResource {
 
     @GET
     @Path("fruit/{id}")
+    @CacheResult(cacheName = Metadata.FRUITS_CACHE) 
     public Fruit fruitsById(@PathParam("id") Long id) {
-        //return Fruit.findById(id);
-        return cache.get(id);
+        LOGGER.info("fruitsById");
+        return Fruit.findById(id);
     }
 
     @POST
@@ -138,6 +131,7 @@ public class FruitResource {
     @Path("fruit")
     @Transactional
     public Response saveFruit(Fruit fruit) {
+        LOGGER.info("saveFruit");
         // since the FruitEntity is a panache entity
         // persist is available by default
         fruit.persist();
@@ -151,13 +145,14 @@ public class FruitResource {
     @PUT
     @Path("fruit/{id}")
     @Transactional
-    public Response updateFruit(@PathParam("id") Long id, Fruit fruit) {
+    public Response updateFruit(@PathParam("id") @CacheKey Long id, Fruit fruit) {
+        LOGGER.info("updateFruit");
         LOGGER.info(String.format("id: %s fruit: %s", id, fruit));
 
         // since the FruitEntity is a panache entity
         // persist is available by default
         Fruit found = Fruit.findById(id);
-        LOGGER.info("found" + found);
+        LOGGER.info("found " + found);
         if (found != null) {
             found.name = fruit.name;
             found.season = fruit.season;
@@ -183,4 +178,6 @@ public class FruitResource {
         Fruit.deleteById(id);
         cache.remove(id);
     }
+
+
 }
