@@ -31,6 +31,7 @@ import org.infinispan.query.dsl.QueryFactory;
 import org.infinispan.query.dsl.QueryResult;
 import org.jboss.logging.Logger;
 
+import io.quarkus.cache.CacheInvalidateAll;
 import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.infinispan.client.Remote;
@@ -58,6 +59,7 @@ public class FruitResource {
     
     @GET
     @Path("fruit")
+    @CacheInvalidateAll(cacheName = Metadata.FRUITS_CACHE)
     public List<Fruit> allFruits() {
         LOGGER.info("allFruits");
         List<Fruit> fruitList = Fruit.listAll();
