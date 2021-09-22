@@ -58,8 +58,8 @@ public class ExampleApplicationTest {
 
     @Test
     public void testGetAll() {
-        Fruit cherry = fruitRepository.save(new Fruit("Cherry"));
-        Fruit apple = fruitRepository.save(new Fruit("Apple"));
+        Fruit cherry = fruitRepository.save(new Fruit("Cherry", "Spring"));
+        Fruit apple = fruitRepository.save(new Fruit("Apple", "Spring"));
         requestSpecification()
                 .get()
                 .then()
@@ -79,7 +79,7 @@ public class ExampleApplicationTest {
 
     @Test
     public void testGetOne() {
-        Fruit cherry = fruitRepository.save(new Fruit("Cherry"));
+        Fruit cherry = fruitRepository.save(new Fruit("Cherry", "Spring"));
         requestSpecification()
                 .get(String.valueOf(cherry.getId()))
                 .then()
@@ -141,7 +141,7 @@ public class ExampleApplicationTest {
 
     @Test
     public void testPut() {
-        Fruit cherry = fruitRepository.save(new Fruit("Cherry"));
+        Fruit cherry = fruitRepository.save(new Fruit("Cherry", "Spring"));
         requestSpecification()
                 .contentType(ContentType.JSON)
                 .body(Collections.singletonMap("name", "Lemon"))
@@ -167,7 +167,7 @@ public class ExampleApplicationTest {
 
     @Test
     public void testPutWithWrongPayload() {
-        Fruit cherry = fruitRepository.save(new Fruit("Cherry"));
+        Fruit cherry = fruitRepository.save(new Fruit("Cherry", "Spring"));
         requestSpecification()
                 .contentType(ContentType.JSON)
                 .body(Collections.singletonMap("id", 0))
@@ -179,7 +179,7 @@ public class ExampleApplicationTest {
 
     @Test
     public void testPutWithNonJsonPayload() {
-        Fruit cherry = fruitRepository.save(new Fruit("Cherry"));
+        Fruit cherry = fruitRepository.save(new Fruit("Cherry", "Spring"));
         requestSpecification()
                 .contentType(ContentType.XML)
                 .when()
@@ -190,7 +190,7 @@ public class ExampleApplicationTest {
 
     @Test
     public void testPutWithEmptyPayload() {
-        Fruit cherry = fruitRepository.save(new Fruit("Cherry"));
+        Fruit cherry = fruitRepository.save(new Fruit("Cherry", "Spring"));
         requestSpecification()
                 .contentType(ContentType.JSON)
                 .when()
@@ -201,7 +201,7 @@ public class ExampleApplicationTest {
 
     @Test
     public void testDelete() {
-        Fruit cherry = fruitRepository.save(new Fruit("Cherry"));
+        Fruit cherry = fruitRepository.save(new Fruit("Cherry", "Spring"));
         requestSpecification()
                 .delete(String.valueOf(cherry.getId()))
                 .then()
