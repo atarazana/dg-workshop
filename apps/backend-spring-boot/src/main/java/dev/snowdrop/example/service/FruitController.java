@@ -89,8 +89,8 @@ public class FruitController {
         return post(fruit);
     }
 
-    @GetMapping("/api/fruits/{id}")
-    public Fruit get(@PathVariable("id") Integer id) {
+    @GetMapping("/fruit/{id}")
+    public Fruit get(@PathVariable("id") Long id) {
         if (checkThrowErrors()) {
             throwInternalServerError();
         }
@@ -106,7 +106,7 @@ public class FruitController {
         return repository.findById(id).get();
     }
 
-    @GetMapping("/api/fruits")
+    @GetMapping("/fruit")
     public List<Fruit> getAll() {
         if (checkThrowErrors()) {
             throwInternalServerError();
@@ -127,7 +127,7 @@ public class FruitController {
     }
 
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping("/api/fruits")
+    @PostMapping("/fruit")
     public Fruit post(@RequestBody(required = false) Fruit fruit) {
         if (checkThrowErrors()) {
             throwInternalServerError();
@@ -141,8 +141,8 @@ public class FruitController {
     }
 
     @ResponseStatus(HttpStatus.OK)
-    @PutMapping("/api/fruits/{id}")
-    public Fruit put(@PathVariable("id") Integer id, @RequestBody(required = false) Fruit fruit) {
+    @PutMapping("/fruit/{id}")
+    public Fruit put(@PathVariable("id") Long id, @RequestBody(required = false) Fruit fruit) {
         if (checkThrowErrors()) {
             throwInternalServerError();
         }
@@ -157,9 +157,25 @@ public class FruitController {
         return repository.save(fruit);
     }
 
+    @GetMapping("/fruit-by-season/{season}")
+    public List<Fruit> get(@PathVariable("season") String season) {
+        if (checkThrowErrors()) {
+            throwInternalServerError();
+        }
+
+        // >>> Prometheus metric
+        Metrics.counter("api.http.requests.total", "api", "fruit", "method", "GET", "endpoint", 
+            "/fruit-by-season/" + season).increment();
+        // <<< Prometheus metric
+
+        timeOut();
+
+        return repository.findBySeason(season);
+    }
+
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @DeleteMapping("/api/fruits/{id}")
-    public void delete(@PathVariable("id") Integer id) {
+    @DeleteMapping("/fruit/{id}")
+    public void delete(@PathVariable("id") Long id) {
         if (checkThrowErrors()) {
             throwInternalServerError();
         }
@@ -171,7 +187,7 @@ public class FruitController {
         timeOut();
     }
 
-    private void verifyFruitExists(Integer id) {
+    private void verifyFruitExists(Long id) {
         if (!repository.existsById(id)) {
             throw new NotFoundException(String.format("Fruit with id=%d was not found", id));
         }

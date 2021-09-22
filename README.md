@@ -22,7 +22,19 @@ NOTE: Run `oc project` to see that the default project is the project the script
 ./run.sh $(oc whoami)
 ```
 
+## Run DB locally
+
+```sh
+./run-infinispan.sh 
+```
+
 ## If Spring Boot
+
+Run the app with:
+
+```sh
+./mvnw spring-boot:run -Plocal -Dspring-boot.run.profiles=local
+```
 
 Deploy code with no cache involved
 

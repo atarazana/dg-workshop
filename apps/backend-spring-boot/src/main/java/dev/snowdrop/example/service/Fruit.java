@@ -27,23 +27,26 @@ public class Fruit {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "FruitSequence")
-    @SequenceGenerator(name = "FruitSequence", sequenceName = "FRUIT_SEQ")
-    private Integer id;
-
+    @SequenceGenerator(name = "FruitSequence", sequenceName = "FRUIT_SEQ")    
+    private Long id;
+    
     private String name;
+
+    private String season;
 
     public Fruit() {
     }
-
-    public Fruit(String type) {
-        this.name = type;
+    
+    public Fruit(String name, String season) {
+        this.name = name;
+        this.season = season;
     }
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -53,5 +56,13 @@ public class Fruit {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getSeason() {
+        return season;
+    }
+
+    public void setSeason(String season) {
+        this.season = season;
     }
 }
