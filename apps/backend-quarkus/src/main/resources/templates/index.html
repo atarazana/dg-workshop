@@ -117,10 +117,18 @@
 <body ng-app="FruitManagement" ng-controller="FruitManagementController">
 
 <div class="container">
-    <h1>CRUD Mission - Quarkus</h1>
+    <h1>Fruit Service - Quarkus</h1>
     <p>
-        This application demonstrates how a Quarkus application implements a CRUD endpoint to manage <em>fruits</em>.
-        This management interface invokes the CRUD service endpoint, that interact with a <b>{dbType}</b> database with connection string <b>{datasourceJdbcUrl}</b> using profile <b>{profile}</b>.
+      This application demonstrates how a Quarkus application implements a CRUD endpoint to manage <em>fruits</em>.
+    </p>
+
+    <p>
+      This management interface invokes the CRUD service endpoint with the following setup:
+      <ul>
+        <li><b>Database Type:</b> {dbType}</li>
+        <li><b>Database JDBC:</b> {datasourceJdbcUrl}</li>
+        <li><b>Profile:</b> {profile}</li>
+      </ul>
     </p>
 
     <h3>Add/Edit a fruit</h3>
